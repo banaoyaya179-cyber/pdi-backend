@@ -76,16 +76,17 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll()
-                // Lecture autorisée à tous les rôles authentifiés
+                // Admin uniquement
+                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+                // Notifications — GET et PUT pour admin et responsable
+                .requestMatchers("/api/notifications/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_RESPONSABLE")
+                // Lecture (GET) pour tous les rôles authentifiés
                 .requestMatchers(
                     org.springframework.http.HttpMethod.GET,
-                    "/api/agent/**", "/api/responsable/**"
-                ).hasAnyAuthority("ROLE_ADMIN", "ROLE_AGENT", "ROLE_RESPONSABLE")
-                // Écriture réservée à agent et admin
-                .requestMatchers(
                     "/api/agent/**"
-                ).hasAnyAuthority("ROLE_ADMIN", "ROLE_AGENT")
-                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+                ).hasAnyAuthority("ROLE_ADMIN", "ROLE_AGENT", "ROLE_RESPONSABLE")
+                // Écriture (POST/PUT) réservée à agent et admin
+                .requestMatchers("/api/agent/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_AGENT")
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
