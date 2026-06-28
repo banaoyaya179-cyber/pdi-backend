@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface AideHumanitaireRepository extends JpaRepository<AideHumanitaire, Long> {
     List<AideHumanitaire> findByBesoinId(Long idBesoin);
+    void deleteByBesoinId(Long idBesoin);
 }

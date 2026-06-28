@@ -30,6 +30,20 @@ public class AuthController {
     private final AuditLogService auditLogService;
     private final TwoFactorService twoFactorService;
 
+    private AuthResponse buildAuthResponse(Utilisateur user, String token,
+                                            boolean requires2FA, boolean doubleAuthActive) {
+        return new AuthResponse(
+                token,
+                user.getEmail(),
+                user.getRole().getLibelle().name(),
+                user.getNom(),
+                user.getPrenom(),
+                requires2FA,
+                doubleAuthActive,
+                user.getIdSiteAffecte()
+        );
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request,
                                    HttpServletRequest httpRequest) {
@@ -38,11 +52,9 @@ public class AuthController {
         );
 
         Utilisateur user = utilisateurRepository.findByEmail(request.getEmail()).orElseThrow();
-
         auditLogService.log("CONNEXION", httpRequest.getRemoteAddr(),
                 "Utilisateur#" + user.getId(), user);
 
-        // Si 2FA activé → ne pas encore donner le token
         if (user.isDoubleAuthActive()) {
             return ResponseEntity.ok(Map.of(
                     "requires2FA", true,
@@ -51,13 +63,9 @@ public class AuthController {
         }
 
         String token = jwtUtils.generateToken(user.getEmail(), user.getRole().getLibelle().name());
-        return ResponseEntity.ok(new AuthResponse(
-                token, user.getEmail(), user.getRole().getLibelle().name(),
-                user.getNom(), user.getPrenom(), false, false
-        ));
+        return ResponseEntity.ok(buildAuthResponse(user, token, false, false));
     }
 
-    // Vérifier le code 2FA et retourner le token
     @PostMapping("/verify-2fa")
     public ResponseEntity<?> verify2FA(@Valid @RequestBody Verify2FARequest request,
                                         HttpServletRequest httpRequest) {
@@ -68,23 +76,17 @@ public class AuthController {
 
         Utilisateur user = utilisateurRepository.findByEmail(request.getEmail()).orElseThrow();
         String token = jwtUtils.generateToken(user.getEmail(), user.getRole().getLibelle().name());
-
         auditLogService.log("CONNEXION_2FA", httpRequest.getRemoteAddr(),
                 "Utilisateur#" + user.getId(), user);
 
-        return ResponseEntity.ok(new AuthResponse(
-                token, user.getEmail(), user.getRole().getLibelle().name(),
-                user.getNom(), user.getPrenom(), false, true
-        ));
+        return ResponseEntity.ok(buildAuthResponse(user, token, false, true));
     }
 
-    // Setup 2FA — générer QR code
     @PostMapping("/setup-2fa")
     public ResponseEntity<Setup2FAResponse> setup2FA(Authentication authentication) {
         return ResponseEntity.ok(twoFactorService.setup(authentication.getName()));
     }
 
-    // Activer 2FA après scan du QR
     @PostMapping("/activate-2fa")
     public ResponseEntity<?> activate2FA(@RequestBody Map<String, Integer> body,
                                           Authentication authentication) {
@@ -93,7 +95,6 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "2FA activé avec succès."));
     }
 
-    // Désactiver 2FA
     @PostMapping("/disable-2fa")
     public ResponseEntity<?> disable2FA(Authentication authentication) {
         twoFactorService.desactiver(authentication.getName());
@@ -104,9 +105,6 @@ public class AuthController {
     public ResponseEntity<AuthResponse> me(Authentication authentication) {
         Utilisateur user = utilisateurRepository
                 .findByEmail(authentication.getName()).orElseThrow();
-        return ResponseEntity.ok(new AuthResponse(
-                null, user.getEmail(), user.getRole().getLibelle().name(),
-                user.getNom(), user.getPrenom(), false, user.isDoubleAuthActive()
-        ));
+        return ResponseEntity.ok(buildAuthResponse(user, null, false, user.isDoubleAuthActive()));
     }
 }

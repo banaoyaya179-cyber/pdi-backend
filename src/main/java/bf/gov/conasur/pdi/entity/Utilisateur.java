@@ -36,6 +36,9 @@ public class Utilisateur {
     @Column(name = "secret_2fa", length = 100)
     private String secret2FA;
 
+    @Column(name = "id_site_affecte")
+    private Integer idSiteAffecte;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_role", nullable = false)
     private Role role;

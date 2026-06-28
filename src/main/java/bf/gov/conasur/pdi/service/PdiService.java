@@ -10,6 +10,9 @@ import bf.gov.conasur.pdi.entity.SiteAccueil;
 import bf.gov.conasur.pdi.enums.StatutPDI;
 import bf.gov.conasur.pdi.exception.DoublonException;
 import bf.gov.conasur.pdi.exception.ResourceNotFoundException;
+import bf.gov.conasur.pdi.repository.AideHumanitaireRepository;
+import bf.gov.conasur.pdi.repository.BesoinRepository;
+import bf.gov.conasur.pdi.repository.DeplacementRepository;
 import bf.gov.conasur.pdi.repository.MenageRepository;
 import bf.gov.conasur.pdi.repository.PdiRepository;
 import bf.gov.conasur.pdi.repository.SiteAccueilRepository;
@@ -29,6 +32,9 @@ public class PdiService {
     private final PdiRepository pdiRepository;
     private final MenageRepository menageRepository;
     private final SiteAccueilRepository siteAccueilRepository;
+    private final DeplacementRepository deplacementRepository;
+    private final BesoinRepository besoinRepository;
+    private final AideHumanitaireRepository aideHumanitaireRepository;
 
     public PdiResponse enroler(EnrolementPdiRequest req) {
         if (pdiRepository.existsByNomIgnoreCaseAndPrenomIgnoreCaseAndDateNaissance(
@@ -96,6 +102,18 @@ public class PdiService {
         }
 
         return new PdiResponse(pdiRepository.save(pdi));
+    }
+
+    public void supprimer(Integer id) {
+        Pdi pdi = getPdiOuErreur(id);
+        aideHumanitaireRepository.deleteAll(
+            besoinRepository.findByPdiId(id).stream()
+                .flatMap(b -> aideHumanitaireRepository.findByBesoinId(b.getId()).stream())
+                .toList()
+        );
+        besoinRepository.deleteByPdiId(id);
+        deplacementRepository.deleteByPdiId(id);
+        pdiRepository.delete(pdi);
     }
 
     private Pdi getPdiOuErreur(Integer id) {

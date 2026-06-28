@@ -59,6 +59,15 @@ public class PdiController {
                 pdiService.rechercher(nom, prenom, statut, idSite, idRegion, page, taille));
     }
 
+    // DELETE /api/admin/pdi/{id} — Supprimer une PDI (ADMIN uniquement)
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Void> supprimer(@PathVariable Integer id, HttpServletRequest httpReq) {
+        pdiService.supprimer(id);
+        auditLogService.log("SUPPRESSION_PDI", httpReq.getRemoteAddr(), "PDI#" + id, null);
+        return ResponseEntity.noContent().build();
+    }
+
     // PUT /api/agent/pdi/{id} — Mettre à jour une PDI
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_AGENT', 'ROLE_ADMIN')")

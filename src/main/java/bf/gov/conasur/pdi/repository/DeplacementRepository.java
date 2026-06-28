@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface DeplacementRepository extends JpaRepository<Deplacement, Long> {
     List<Deplacement> findByPdiIdOrderByDateMouvementDesc(Integer idPdi);
+    void deleteByPdiId(Integer idPdi);
 }

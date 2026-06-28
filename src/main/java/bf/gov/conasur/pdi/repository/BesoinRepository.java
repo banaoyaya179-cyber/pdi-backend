@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface BesoinRepository extends JpaRepository<Besoin, Long> {
     List<Besoin> findByPdiId(Integer idPdi);
+    void deleteByPdiId(Integer idPdi);
     List<Besoin> findByMenageId(Integer idMenage);
     List<Besoin> findByStatut(StatutBesoin statut);
     long countByPrioriteAndStatutNot(Priorite priorite, StatutBesoin statut);
